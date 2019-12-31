@@ -1,3 +1,5 @@
 *.pyc
 *.log
+*.h5
 /datasets/*
+__pycache__/*
