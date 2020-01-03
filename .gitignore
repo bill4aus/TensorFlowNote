@@ -3,3 +3,4 @@
 *.h5
 /datasets/*
 __pycache__/*
+*.file
