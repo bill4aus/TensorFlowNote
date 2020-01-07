@@ -76,7 +76,8 @@ id2word=tokenizer.index_word #得到每个编号对应的词
 # print(vocab)
 print(word2id.get('\t'))
 print(word2id.get('\n'))
-print(len(word2id))
+# print(len(word2id))
+VOCAB_SIZE = len(word2id)
 # exit()
 
 # saving
@@ -84,7 +85,7 @@ with open('tokenizer.pickle', 'wb') as handle:
     pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def text2seq(tokenizer,encoder_text, decoder_text, VOCAB_SIZE):
+def text2seq(tokenizer,encoder_text, decoder_text):
     # tokenizer = Tokenizer(num_words=VOCAB_SIZE)
     encoder_sequences = tokenizer.texts_to_sequences(encoder_text)
     decoder_sequences = tokenizer.texts_to_sequences(decoder_text)
@@ -167,7 +168,7 @@ def datagenerator():
     while True:
         for i in range(batches):
             pass
-            encoder_sequences, decoder_sequences = text2seq(tokenizer,corpusX[BATCH_SIZE*i:BATCH_SIZE*(i+1)], corpusYin[BATCH_SIZE*i:BATCH_SIZE*(i+1)],squence_length)
+            encoder_sequences, decoder_sequences = text2seq(tokenizer,corpusX[BATCH_SIZE*i:BATCH_SIZE*(i+1)], corpusYin[BATCH_SIZE*i:BATCH_SIZE*(i+1)])
             encoder_input_data, decoder_input_data = padding(encoder_sequences, decoder_sequences, squence_length)
             num_samples = len(encoder_sequences)
             decoder_output_data = decoder_output_creater(decoder_input_data, num_samples, squence_length, len(word2id))
@@ -206,8 +207,10 @@ def bidirectional_lstm():
     # print(den_shape)
 
     # encoder
-    encoder_inputs = Input(shape=(squence_length,),name="encodinput")
-    emb_inp = Embedding(output_dim=EMBEDDING_DIM, input_dim=len(word2id),input_length =squence_length)(encoder_inputs)
+    # encoder_inputs = Input(shape=(squence_length,),name="encodinput")
+    encoder_inputs = Input(shape=(None,),name="encodinput")
+    # input_length =squence_length
+    emb_inp = Embedding(output_dim=EMBEDDING_DIM, input_dim=len(word2id))(encoder_inputs)
 
     # dropout_U = 0.2, dropout_W = 0.2 ,
     encoder_LSTM = LSTM(HIDDEN_UNITS, return_state=True)
@@ -222,8 +225,10 @@ def bidirectional_lstm():
     encoder_states = [final_state_h, final_state_c]
 
     # decoder
-    decoder_inputs = Input(shape=(squence_length,),name="decodinput")
-    emb_target = Embedding(output_dim=EMBEDDING_DIM, input_dim=len(word2id),input_length =squence_length, mask_zero=True)(decoder_inputs)
+    # decoder_inputs = Input(shape=(squence_length,),name="decodinput")
+    decoder_inputs = Input(shape=(None,),name="decodinput")
+    # input_length =squence_length,
+    emb_target = Embedding(output_dim=EMBEDDING_DIM, input_dim=len(word2id), mask_zero=True)(decoder_inputs)
 
     decoder_LSTM = LSTM(HIDDEN_UNITS, return_sequences=True, return_state=True)
     decoder_outputs, _, _, = decoder_LSTM(emb_target, initial_state=encoder_states)

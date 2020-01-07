@@ -6,15 +6,17 @@ import os
 import pickle
 import random
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-#
-# with open('../../datasets/cmn.txt', 'r', encoding='utf-8') as f:
-#     data = f.read()
-#     data = data.split('\n')
-#     # print(data)
-#     # data = data[:100]
-# print(data[-500:])
-# print(len(data))
-# data = data[0:1000]
+
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+for gpu in gpus:
+    tf.config.experimental.set_memory_growth(gpu, True)
+
+
+
 # # exit()
 #
 # en_data = [line.split('\t')[0] for line in data]
@@ -56,14 +58,14 @@ with open('tokenizer.pickle', 'rb') as handle:
     tokenizer = pickle.load(handle)
 ######################## model ##############################
 
-EN_VOCAB_SIZE = len(tokenizer.word_index)
-CH_VOCAB_SIZE = len(tokenizer.word_index)
+VOCAB_SIZE = len(tokenizer.word_index)
+
 HIDDEN_SIZE = 256
 
 LEARNING_RATE = 0.003
 BATCH_SIZE = 100
 EPOCHS = 200
-squence_length = 100
+squence_length = 10
 #
 #
 # encoder_inputs = keras.Input(shape=(None, EN_VOCAB_SIZE))
@@ -195,8 +197,6 @@ decoder_model = keras.Model([decoder_inputs, decoder_state_input_h1, decoder_sta
 # decoder_model = keras.Model([decoder_inputs_, decoder_state_input_h1, decoder_state_input_c1, decoder_state_input_h2, decoder_state_input_c2],
 #                       [decoder_outputs, state_h1, state_c1, state_h2, state_c2])
 
-maxFeature=10000
-# tokenizer = Tokenizer(filters='!"#$%&()*+,-./:;<=>?@[\]^_`{|}~！，。（）；’‘',split=" ",num_words=maxFeature)  #创建一个Tokenizer对象
 
 # exit()
 random.seed(234)
@@ -224,22 +224,29 @@ def doc2v(tokenizer,encoder_text,MAX_LEN,VOCAB_SIZE):
 for enchar in task:
     # test_data = encoder_input_data[k:k + 1]
     test_data = doc2v(tokenizer,enchar,squence_length,len(tokenizer.index_word))
-    test_input = test_data[0].T
+    test_input = test_data[0]
+    test_input = test_input.reshape(VOCAB_SIZE,squence_length)
     print(test_input.shape)
     # exit()
 
 
 
     h1, c1, h2, c2 = encoder_model.predict(test_input)
-    target_seq = np.zeros((squence_length, CH_VOCAB_SIZE))
-    target_seq[0, tokenizer.word_index['\t']] = 1
+
+    target_seq = np.zeros((1,squence_length, VOCAB_SIZE))
+    target_seq[0,0, tokenizer.word_index['\t']] = 1
+    # target_seq = target_seq.reshape(CH_VOCAB_SIZE,squence_length)
+    
     outputs = []
     while True:
-        output_tokens, h1, c1 = decoder_model.predict([target_seq.T, h1, c1])
+        output_tokens, h1, c1 = decoder_model.predict([target_seq, h1, c1])
         sampled_token_index = np.argmax(output_tokens[0, -1, :])
         outputs.append(sampled_token_index)
-        target_seq = np.zeros(( squence_length, CH_VOCAB_SIZE))
-        target_seq[0, sampled_token_index] = 1.
+
+        target_seq = np.zeros(( 1,squence_length, VOCAB_SIZE))
+        target_seq[0,0, sampled_token_index] = 1.
+        # target_seq = target_seq.reshape(CH_VOCAB_SIZE,squence_length)
+
         if sampled_token_index == tokenizer.word_index['\n'] or len(outputs) > 20: break
 
     # print(en_data[k])
