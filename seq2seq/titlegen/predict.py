@@ -4,6 +4,7 @@ import tensorflow.keras as keras
 import numpy as np
 import os
 import pickle
+import random
 #
 # with open('../../datasets/cmn.txt', 'r', encoding='utf-8') as f:
 #     data = f.read()
@@ -30,12 +31,14 @@ with open("zh.file", "rb") as f:
 m_config = {}
 with open("config.file", "rb") as f:
     m_config = pickle.load(f)
-print(m_config)
+# print(m_config)
 # 分别生成中英文字典
 # en_vocab = en_file['id2en']
 id2en = en_file['id2en']
 en2id = en_file['en2id'] #{c:i for i,c in enumerate(id2en)}
 
+# print(id2en)
+# exit()
 # ch_vocab = zh_file['vocab']
 id2ch = zh_file['id2ch']
 ch2id = zh_file['ch2id'] #{c:i for i,c in enumerate(id2ch)}
@@ -351,17 +354,29 @@ decoder_model = keras.Model([decoder_inputs, decoder_state_input_h1, decoder_sta
 
 
 
-
-
+# print(id2en)
+# print(en2id)
+# exit()
+random.seed(234)
+# idx = random.randint(0,len(id2en))
+# print(idx)
 task =[
     # '明星 税务 国外 震惊 范冰冰',
-    # '农村 小伙 城里 偷笑 房子',
+    # '农村 小伙 城里 房子',
     # '荷花 西湖 金粟词话 采莲女 林逋 荷叶',
-    # '荷花 西湖 采莲女',
+    # '荷花 西湖',
     # '杨迪 脱口秀',
-    '杨迪 赔率',
-    '荷花 西湖',
+    # '杨迪 赔率',
+    # '巴菲特',
+    # id2en[46] +' '+ id2en[86]
+    # id2en[46]
 ]
+
+for ii in range(1,20):
+    idx = random.randint(0,len(id2en))
+    idx2 = random.randint(0,len(id2en))
+    idx3 = random.randint(0,len(id2en))
+    task.append(id2en[idx]+' '+ id2en[idx2]+' '+ id2en[idx3])
 
 
 for enchar in task:

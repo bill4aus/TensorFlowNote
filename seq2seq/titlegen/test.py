@@ -28,11 +28,12 @@ with open('./toutiao_cat_data.txt','r',encoding='utf-8') as f:
             # print('title:'+title)
 
 
-
-            if len(keyword_)>1:
+            # print(len(keyword_))
+            # print(keyword_)
+            if len(keyword_)>=2:
                 keyword = []
                 for kwd in keyword_:
-                    if len(kwd) > 2:
+                    if len(kwd) <= 3:
                         keyword.append(kwd)
                 corpus.append((' '.join(jieba.cut(title)),' '.join(keyword)))
 
@@ -41,7 +42,8 @@ with open('./toutiao_cat_data.txt','r',encoding='utf-8') as f:
             print(str(e))
 
 
-print(corpus)
+print(len(corpus))
+# exit()
 
 corpus = corpus[0:3000]
 
@@ -66,7 +68,8 @@ ch_data = ['\t ' + title + ' \n' for title, keywords in corpus]
 
 
 print('英文数据:\n', en_data[:10])
-print('\n中文数据:\n', ch_data[:10])
+# print('\n中文数据:\n', ch_data[:10])
+# exit()
 
 # 分别生成中英文字典
 # en_vocab = set(''.join(en_data))
@@ -254,10 +257,10 @@ decoder_model = keras.Model([decoder_inputs, decoder_state_input_h1, decoder_sta
 
 
 task =[
-    '张柏芝 张雨绮 吴卓林 谢霆锋',
+    # '张柏芝 张雨绮 吴卓林 谢霆锋',
     # '农村 小伙 城里 偷笑 房子',
     # '荷花 西湖 金粟词话 采莲女 林逋 荷叶',
-    # '荷花 西湖 采莲女',
+    # '荷花 西湖',
     # '杨迪 脱口秀',
 ]
 
