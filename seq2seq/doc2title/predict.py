@@ -56,9 +56,15 @@ print('\n中文字典共计\n:', ch2id)
 # loading
 with open('tokenizer.pickle', 'rb') as handle:
     tokenizer = pickle.load(handle)
+
+
+word2id=tokenizer.word_index #得到每个词的编号
+id2word=tokenizer.index_word #得到每个编号对应的词
+# print(id2word)
+
 ######################## model ##############################
 
-VOCAB_SIZE = len(tokenizer.word_index)
+VOCAB_SIZE = len(id2word)
 
 HIDDEN_SIZE = 256
 
@@ -221,11 +227,16 @@ def doc2v(tokenizer,encoder_text,MAX_LEN,VOCAB_SIZE):
     return decoder_output_data
 
 
+
+print(word2id.get('\t'))
+print(word2id.get('\n'))
+
+
 for enchar in task:
     # test_data = encoder_input_data[k:k + 1]
-    test_data = doc2v(tokenizer,enchar,squence_length,len(tokenizer.index_word))
+    test_data = doc2v(tokenizer,enchar,squence_length,len(id2word))
     test_input = test_data[0]
-    test_input = test_input.reshape(VOCAB_SIZE,squence_length)
+    # test_input = test_input.reshape(VOCAB_SIZE,squence_length)
     print(test_input.shape)
     # exit()
 
@@ -233,23 +244,24 @@ for enchar in task:
 
     h1, c1, h2, c2 = encoder_model.predict(test_input)
 
-    target_seq = np.zeros((1,squence_length, VOCAB_SIZE))
-    target_seq[0,0, tokenizer.word_index['\t']] = 1
+    target_seq = np.zeros((squence_length, VOCAB_SIZE))
+    target_seq[0,word2id['\t']] = 1
     # target_seq = target_seq.reshape(CH_VOCAB_SIZE,squence_length)
     
     outputs = []
     while True:
         output_tokens, h1, c1 = decoder_model.predict([target_seq, h1, c1])
+        print(output_tokens[0, -1, :])
         sampled_token_index = np.argmax(output_tokens[0, -1, :])
         outputs.append(sampled_token_index)
 
-        target_seq = np.zeros(( 1,squence_length, VOCAB_SIZE))
-        target_seq[0,0, sampled_token_index] = 1.
+        target_seq = np.zeros(( squence_length, VOCAB_SIZE))
+        target_seq[0, sampled_token_index] = 1.
         # target_seq = target_seq.reshape(CH_VOCAB_SIZE,squence_length)
 
-        if sampled_token_index == tokenizer.word_index['\n'] or len(outputs) > 20: break
+        if sampled_token_index == word2id['\n'] or len(outputs) > 20: break
 
     # print(en_data[k])
     print(enchar)
     print(outputs)
-    print(''.join([tokenizer.index_word[i] for i in outputs]))
+    print(''.join([id2word.get(i,'None') for i in outputs]))

@@ -28,9 +28,9 @@ for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
 
 
-kk =5000
+kk =76000
 corpus = []
-squence_length = 100
+squence_length = 10
 BATCH_SIZE = 10
 maxFeature=10000
 
@@ -86,83 +86,43 @@ with open('tokenizer.pickle', 'wb') as handle:
 
 
 def text2seq(tokenizer,encoder_text, decoder_text):
-    # tokenizer = Tokenizer(num_words=VOCAB_SIZE)
+    # print('encode text : {}'.format(encoder_text[0]))
+    # print('decode text : {}'.format(decoder_text[0]))
+
     encoder_sequences = tokenizer.texts_to_sequences(encoder_text)
     decoder_sequences = tokenizer.texts_to_sequences(decoder_text)
+
+    # print('encode text sequence : {}'.format(encoder_sequences[0]))
+    # print('decode text sequence : {}'.format(decoder_sequences[0]))
+
     return encoder_sequences, decoder_sequences
 
 def padding(encoder_sequences, decoder_sequences, MAX_LEN):
     encoder_input_data = pad_sequences(encoder_sequences, maxlen=MAX_LEN, dtype='int32', padding='post', truncating='post')
     decoder_input_data = pad_sequences(decoder_sequences, maxlen=MAX_LEN, dtype='int32', padding='post', truncating='post')
+
+    # print('encode input data : {}'.format(encoder_input_data[0]))
+    # print('decode input data : {}'.format(decoder_input_data[0]))
+
     return encoder_input_data, decoder_input_data
 
 def decoder_output_creater(decoder_input_data, num_samples, MAX_LEN, VOCAB_SIZE):
     decoder_output_data = np.zeros((num_samples, MAX_LEN, VOCAB_SIZE), dtype="float32")
     for i, seqs in enumerate(decoder_input_data):
+        # print(seqs)
         for j, seq in enumerate(seqs):
             if j > 0:
-                decoder_output_data[i][j][seq-1] = 1.
-    # print(decoder_output_data.shape)
+                decoder_output_data[i][j][seq] = 1.
+
+    # print('decode output data : {}'.format(decoder_output_data[0]))
+
     return decoder_output_data
 
-# encoder_sequences, decoder_sequences = text2seq(tokenizer,corpusX, corpusYin,squence_length)
-
-# # print(encoder_sequences)
-# # print(decoder_sequences)
-
-# encoder_input_data, decoder_input_data = padding(encoder_sequences, decoder_sequences, squence_length)
-
-# print(encoder_input_data.shape)
-# print(decoder_input_data.shape)
-# num_samples = len(encoder_sequences)
-# decoder_output_data = decoder_output_creater(decoder_input_data, num_samples, squence_length, len(word2id))
-
-# print(decoder_output_data.shape)
-# exit()
-
-
-# x_train_word_ids=tokenizer.texts_to_sequences(corpusX)
-# y_train_word_ids_=tokenizer.texts_to_sequences(corpusY)
-# y_train_word_ids = [idlist[1:] for idlist in y_train_word_ids_]
-
-
-
-# print(x_train_word_ids)
-# x_train_word_ids = np.array(x_train_word_ids)
-
-# max_encoder_seq_length = max([len(wdlist) for wdlist in x_train_word_ids])
-# max_decoder_seq_length = max([len(txt) for txt in ch_num_data])
-# print(max_encoder_seq_length)
-
-# trainX = pad_sequences(x_train_word_ids,maxlen=500, dtype='int')
-# trainY_ = pad_sequences(y_train_word_ids_,maxlen=30, dtype='int')
-# trainY = pad_sequences(y_train_word_ids,maxlen=30, dtype='int')
-
-# trainX = trainX.reshape(*trainX.shape, 1)
-# trainY_ = trainY_.reshape(*trainY_.shape, 1)
-# trainY = trainY.reshape(*trainY.shape, 1)
-
-# print(trainX)
-# print(trainY.shape)
 
 # exit()
 # np.zeros((1500,100,20000),dtype="float32")
 # np.zeros((1500,100,20000),dtype="float32")
 def datagenerator():
-    # encoder_sequences, decoder_sequences = text2seq(tokenizer,corpusX, corpusYin,squence_length)
-
-    # encoder_input_data, decoder_input_data = padding(encoder_sequences, decoder_sequences, squence_length)
-
-    # num_samples = len(encoder_sequences)
-    # decoder_output_data = decoder_output_creater(decoder_input_data, num_samples, squence_length, len(word2id))
-
-    # print(encoder_input_data.shape)
-    # print(decoder_input_data.shape)
-    # print(decoder_output_data.shape)
-    # for a,b,c in zip(encoder_input_data,decoder_input_data,decoder_output_data):
-    #     print(a.shape,b.shape,c.shape)
-    #     yield ({"encodinput":a,"decodinput":b},{"output":c})
-
     batches = (len(corpusX)+BATCH_SIZE-1)//BATCH_SIZE
     # print(batches)
     while True:
