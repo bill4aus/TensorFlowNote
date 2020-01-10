@@ -28,87 +28,242 @@ for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
 
 
-kk =76000
+n_simples =50000
+# n_simples =76000
 corpus = []
-squence_length = 10
-BATCH_SIZE = 10
+# squence_length = 16
+BATCH_SIZE = 50
+# maxFeature=180
 maxFeature=10000
 
-lr = 0.01
+lr = 0.002
 
-EPOCHS = 10
+EPOCHS = 300
 
-with open('./news2016zh_valid.json','r',encoding='utf-8') as f:
-    textlineslinee = f.read()
-    textlineslines = textlineslinee.split('\n')
-    random.shuffle(textlineslines)
-    # print(len(textlineslines))
-    for line in textlineslines[:kk]:
-        try:
-            newsjoson=json.loads(line)
-            title = newsjoson['title']
-            content = newsjoson['content']
-            corpus.append((' '.join(list(content)),' '.join(list(title))))
-        except Exception as e:
-            # raise e
-            print(str(e))
+stag = 'start'
+etag = 'end'
+ptag = ' '
+btag = ' '
+
+# padding 问题
+# genertaor 问题
+
+# # 四川话 任务
+# raw_data=[
+
+# ('你是傻子','你是瓜娃儿'),
+# ('你怎么了',"你咋个了"),
+# ("你怎么那么傻啊","你咋个楞个傻哦"),
+# ('怎么弄嘛',"咋个弄嘛"),
+# ("傻子都知道","瓜娃儿都晓得"),
+# ("你知道吗","你晓得不"),
+# ("怎么了","咋个了"),
+# ("你知道啊","你晓得哦"),
+# ("傻子啊","瓜娃儿哦"),
+# ("你知道吗","你晓得不"),
+# ("操你妈","日你先人板板"),
+# ("粘住了","巴到了"),
+# ("很重","邦重"),
+# ("倒霉","背时"),
+# ("不会","不得"),
+# ("不要扭","不要动"),
+# ("刚才","才将"),
+# ("抡你两耳光","产你两耳屎"),
+# ("撒谎","扯谎"),
+# ("打鼾","扯蒲憨"),
+# ("吃饭","吃茫茫"),
+# ("吃霸王餐","吃跑堂"),
+# ("讨厌的人","烂屁娃儿"),
+# ("吹牛聊天","吹牛扯把子"),
+# ("捉住","逮到"),
+# ("白搭","等于零"),
+# ("截住","短倒"),
+# ("正确","对头"),
+# ("下次","二回"),
+# ("以后","二天"),
+# ("很烦","烦求得很"),
+# ("坐车","赶车"),
+# ("上面","高头"),
+# ("强行","鼓到"),
+# ("胡说","鬼扯"),
+# ("好吓人啊","好黑人哦"),
+# ("骗人","豁人"),
+# ("假如","假比"),
+# ("跨过来","卡过来"),
+# ("没有","莫得"),
+# ("抓子嘛","干什么"),
+# ("到达","拢了"),
+# ("爽","安逸"),
+# ("讨饭的","舔盘子的"),
+# ("转弯","倒拐"),
+# ("好玩","好耍"),
+# ("挖苦","弯酸"),
+# ("不表态","稳起"),
+# ("糟糕","喔霍"),
+# ("我试一下","我搞一哈"),
+# ("仔细","下细"),
+# ("乡下","乡坝头"),
+# ("危险","悬火"),
+# ("一回","一盘"),
+# ("暗地里","阴到"),
+# ("真的是","硬是"),
+# ("钻过来","拱过来"),
+# ("看到","雀到"),
+# ("没事","莫得事"),
+# ("是不是真的","是不是哦"),
+
+# ]
+
+# for putonghua,sichuanhua in raw_data:
+#     corpus.append((' '.join(list(putonghua)),' '.join(list(sichuanhua))))
+
+
+
+
+## 标题生成 任务
+# with open('./news2016zh_valid.json','r',encoding='utf-8') as f:
+#     textlineslinee = f.read()
+#     textlineslines = textlineslinee.split('\n')
+#     random.shuffle(textlineslines)
+#     # print(len(textlineslines))
+#     for line in textlineslines[:n_simples]:
+#         try:
+#             newsjoson=json.loads(line)
+#             title = newsjoson['title']
+#             content = newsjoson['content']
+#             corpus.append((' '.join(list(content)),' '.join(list(title))))
+#         except Exception as e:
+#             # raise e
+#             print(str(e))
+
+
+
+# 英语翻译 任务
+with open('../../datasets/cmn.txt', 'r', encoding='utf-8') as f:
+    data = f.read()
+    data = data.split('\n')
+for line in data:
+    english = line.split('\t')[0]
+    chinese = line.split('\t')[1]
+    corpus.append((english,chinese))
+
+
+
+
+
 # exit()
-# print(corpus)
-# exit()
-# corpus = corpus[:]
+
+corpus = corpus[:n_simples]
+print(corpus[:10])
 
 
-tokenizer = Tokenizer(filters='!"#$%&()*+,-./:;<=>?@[\]^_`{|}~！，。（）；’‘',split=" ",num_words=maxFeature)  #创建一个Tokenizer对象
+tokenizer_source = Tokenizer(filters='!"#$%&()*+,-./:;<=>?@[\]^_`{|}~！，。（）；’‘',num_words=maxFeature)  #创建一个Tokenizer对象
+tokenizer_target = Tokenizer(filters='!"#$%&()*+,-./:;<=>?@[\]^_`{|}~！，。（）；’‘',num_words=maxFeature)  #创建一个Tokenizer对象
 
 
 corpusX=[]
 corpusYin=[]
 corpusYout=[]
 for content,title in corpus:
-    corpusX.append(content)
-    corpusYin.append('\t ' + title + ' \n')
-    corpusYout.append(title)
+    corpusX.append(list(content))
+    corpusYin.append(stag +btag+ ' '.join(list(title)) +btag+ etag )
+    corpusYout.append(' '.join(list(title))+btag+ etag)
 
 
-tokenizer.fit_on_texts(corpusX+corpusYin+corpusYout)
-word2id=tokenizer.word_index #得到每个词的编号
-id2word=tokenizer.index_word #得到每个编号对应的词
+max_encoder_seq_length = max([len(wlist) for wlist in corpusX])
+max_decoder_seq_length = max([len(txt) for txt in corpusYin])
+
+print(max_encoder_seq_length)
+print(max_decoder_seq_length)
+# exit()
+
+tokenizer_source.fit_on_texts(corpusX)
+tokenizer_target.fit_on_texts(corpusYin+corpusYout)
+
+word2id_source={ k:tokenizer_source.word_index[k]-1 for k in tokenizer_source.word_index} #得到每个词的编号
+id2word_source={ k-1:tokenizer_source.index_word[k] for k in tokenizer_source.index_word} #得到每个编号对应的词
+
+word2id_target={ k:tokenizer_target.word_index[k]-1 for k in tokenizer_target.word_index} #得到每个词的编号
+id2word_target={ k-1:tokenizer_target.index_word[k] for k in tokenizer_target.index_word} #得到每个编号对应的词
 # print(vocab)
-print(word2id.get('\t'))
-print(word2id.get('\n'))
-# print(len(word2id))
-VOCAB_SIZE = len(word2id)
+
+
+def doc2v(tokenizer_source,encoder_text,MAX_LEN,VOCAB_SIZE_SOURCE):
+    encoder_sequences = tokenizer_source.texts_to_sequences([list(encoder_text)])
+    print(encoder_sequences)
+    # encoder_input_data = pad_sequences(encoder_sequences, maxlen=MAX_LEN, dtype='int32',)# padding='post', truncating='post'
+    encoder_input = np.zeros((1, MAX_LEN, VOCAB_SIZE_SOURCE), dtype="float32")
+
+    # for i, seqs in enumerate(encoder_sequences):
+    #     for j, seq in enumerate(seqs):
+    #         if j > 0:
+    #             encoder_input[i][j][seq-1] = 1.
+
+    for seqs in encoder_sequences:
+        for j, seq in enumerate(seqs):
+            # print(j,seq)
+            encoder_input[0][j][seq-1] = 1.
+
+    return encoder_input
+
+
+print(word2id_source)
+print(id2word_source)
+
+# print(word2id_target)
+# print(id2word_target)
+
+VOCAB_SIZE_SOURCE = len(word2id_source)
+VOCAB_SIZE_TARGET = len(word2id_target)
+print(VOCAB_SIZE_SOURCE)
+print(VOCAB_SIZE_TARGET)
+
+print(word2id_target.get(stag))
+print(word2id_target.get(etag))
+
+# testd = doc2v(tokenizer_source,'hi ',max_encoder_seq_length,VOCAB_SIZE_SOURCE)
+# print(testd)
+# print(testd.shape)
+
+
 # exit()
 
 # saving
-with open('tokenizer.pickle', 'wb') as handle:
-    pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+with open('tokenizer_source.pickle', 'wb') as handle:
+    pickle.dump(tokenizer_source, handle, protocol=pickle.HIGHEST_PROTOCOL)
+with open('tokenizer_target.pickle', 'wb') as handle:
+    pickle.dump(tokenizer_target, handle, protocol=pickle.HIGHEST_PROTOCOL)
+with open("config.file", "wb") as f:
+    pickle.dump({'max_encoder_seq_length':max_encoder_seq_length,'max_decoder_seq_length':max_decoder_seq_length}, f)
 
 
-def text2seq(tokenizer,encoder_text, decoder_text):
+def text2seq(tokenizer_source,tokenizer_target,encoder_text, decoder_in_text, decoder_out_text):
     # print('encode text : {}'.format(encoder_text[0]))
-    # print('decode text : {}'.format(decoder_text[0]))
+    # print('decode in text : {}'.format(decoder_in_text[0]))
+    # print('decode out text : {}'.format(decoder_out_text[0]))
 
-    encoder_sequences = tokenizer.texts_to_sequences(encoder_text)
-    decoder_sequences = tokenizer.texts_to_sequences(decoder_text)
+    encoder_sequences = tokenizer_source.texts_to_sequences(encoder_text)
+    decoder_in_sequences = tokenizer_target.texts_to_sequences(decoder_in_text)
+    decoder_out_sequences = tokenizer_target.texts_to_sequences(decoder_out_text)
 
     # print('encode text sequence : {}'.format(encoder_sequences[0]))
     # print('decode text sequence : {}'.format(decoder_sequences[0]))
 
-    return encoder_sequences, decoder_sequences
+    return encoder_sequences, decoder_in_sequences,decoder_out_sequences
 
-def padding(encoder_sequences, decoder_sequences, MAX_LEN):
+def padding(encoder_sequences, decoder_in_sequences,decoder_out_sequences, MAX_LEN):
     encoder_input_data = pad_sequences(encoder_sequences, maxlen=MAX_LEN, dtype='int32', padding='post', truncating='post')
-    decoder_input_data = pad_sequences(decoder_sequences, maxlen=MAX_LEN, dtype='int32', padding='post', truncating='post')
+    decoder_output_data = pad_sequences(decoder_out_sequences, maxlen=MAX_LEN, dtype='int32', padding='post', truncating='post')
+    decoder_input_data = pad_sequences(decoder_in_sequences, maxlen=MAX_LEN, dtype='int32', padding='post', truncating='post')
 
     # print('encode input data : {}'.format(encoder_input_data[0]))
     # print('decode input data : {}'.format(decoder_input_data[0]))
 
-    return encoder_input_data, decoder_input_data
+    return encoder_input_data, decoder_in_data,decoder_out_data
 
-def decoder_output_creater(decoder_input_data, num_samples, MAX_LEN, VOCAB_SIZE):
+def decoder_output_creater(decoder_out_data, num_samples, MAX_LEN, VOCAB_SIZE):
     decoder_output_data = np.zeros((num_samples, MAX_LEN, VOCAB_SIZE), dtype="float32")
-    for i, seqs in enumerate(decoder_input_data):
+    for i, seqs in enumerate(decoder_out_data):
         # print(seqs)
         for j, seq in enumerate(seqs):
             if j > 0:
@@ -118,25 +273,60 @@ def decoder_output_creater(decoder_input_data, num_samples, MAX_LEN, VOCAB_SIZE)
 
     return decoder_output_data
 
+def model_data_flow_creator(encoder_input_data,decoder_input_data,decoder_output_data,num_samples, max_encoder_seq_length,max_decoder_seq_length, VOCAB_SIZE_SOURCE,VOCAB_SIZE_TARGET):
+    pass
+
+
+    # encoder_input = encoder_input_data
+    # decoder_input = decoder_input_data
+
+    encoder_input = np.zeros((num_samples, max_encoder_seq_length, VOCAB_SIZE_SOURCE), dtype="float32")
+    decoder_input = np.zeros((num_samples, max_decoder_seq_length, VOCAB_SIZE_TARGET), dtype="float32")
+    decoder_output = np.zeros((num_samples, max_decoder_seq_length, VOCAB_SIZE_TARGET), dtype="float32")
+    # decoder_output = np.array([wlist[1:] for wlist in decoder_input_data])
+
+    # for i, seqs in enumerate(decoder_input_data):
+    #     for j, seq in enumerate(seqs):
+    #         if j > 0:
+    #             decoder_output[i][j][seq] = 1.
+
+    # -1  因为 所有的字的索引 统一减了1
+    for i in range(num_samples):
+        # print(i)
+        for t, j in enumerate(encoder_input_data[i]):
+            encoder_input[i, t, j-1] = 1.
+        for t, j in enumerate(decoder_input_data[i]):
+            decoder_input[i, t, j-1] = 1.
+        for t, j in enumerate(decoder_output_data[i]):
+            # print(t,j)
+            # print(decoder_input_data[i][0])
+            decoder_output[i, t, j-1] = 1.
+    return encoder_input,decoder_input,decoder_output
+
 
 # exit()
-# np.zeros((1500,100,20000),dtype="float32")
-# np.zeros((1500,100,20000),dtype="float32")
 def datagenerator():
-    batches = (len(corpusX)+BATCH_SIZE-1)//BATCH_SIZE
+    # batches = (len(corpusX)+BATCH_SIZE-1)//BATCH_SIZE
+    batches = (len(corpusX))//BATCH_SIZE
     # print(batches)
     while True:
         for i in range(batches):
             pass
-            encoder_sequences, decoder_sequences = text2seq(tokenizer,corpusX[BATCH_SIZE*i:BATCH_SIZE*(i+1)], corpusYin[BATCH_SIZE*i:BATCH_SIZE*(i+1)])
-            encoder_input_data, decoder_input_data = padding(encoder_sequences, decoder_sequences, squence_length)
-            num_samples = len(encoder_sequences)
-            decoder_output_data = decoder_output_creater(decoder_input_data, num_samples, squence_length, len(word2id))
-            # print(encoder_input_data.shape)
-            # print(decoder_input_data.shape)
-            # print(decoder_output_data.shape)
 
-            yield ({"encodinput":encoder_input_data,"decodinput":decoder_input_data},{"output":decoder_output_data})
+
+            encoder_sequences, decoder_in_sequences,decoder_out_sequences = text2seq(tokenizer_source,tokenizer_target,corpusX[BATCH_SIZE*i:BATCH_SIZE*(i+1)], corpusYin[BATCH_SIZE*i:BATCH_SIZE*(i+1)],corpusYout[BATCH_SIZE*i:BATCH_SIZE*(i+1)])
+            # encoder_input_data, decoder_output_data,decoder_input_data = padding(encoder_sequences, decoder_sequences, squence_length)
+
+            num_samples = len(encoder_sequences)
+            # decoder_output_data = decoder_output_creater(decoder_out_sequences, num_samples, max_decoder_seq_length, VOCAB_SIZE_TARGET)
+            encoder_input,decoder_input,decoder_output = model_data_flow_creator(encoder_sequences,decoder_in_sequences,decoder_out_sequences, num_samples, max_encoder_seq_length,max_decoder_seq_length,VOCAB_SIZE_SOURCE,VOCAB_SIZE_TARGET)
+
+            # print(encoder_input.shape)
+            # print(decoder_input.shape)
+            # print(decoder_output.shape)
+
+            # yield ({"encodinput":encoder_input_data,"decodinput":decoder_input_data},{"output":decoder_output_data})
+            yield ({"encodinput":encoder_input,"decodinput":decoder_input},{"output":decoder_output})
 
 
 
@@ -148,29 +338,15 @@ def bidirectional_lstm():
     Encoder-Decoder-seq2seq
     """
 
-    # MAX_ART_LEN =
-    # MAX_SUM_LEN =
     EMBEDDING_DIM = 60
     HIDDEN_UNITS =256
 
-    # LEARNING_RATE = 0.002
-    # BATCH_SIZE = 32
-    # EPOCHS = 5
-
-    # input_shape=(input_length, input_dim)
-
-
-    # en_shape = np.shape(encoder_sequences[0])
-    # den_shape = np.shape(decoder_sequences[0])
-
-    # print(en_shape)
-    # print(den_shape)
 
     # encoder
     # encoder_inputs = Input(shape=(squence_length,),name="encodinput")
     encoder_inputs = Input(shape=(None,),name="encodinput")
     # input_length =squence_length
-    emb_inp = Embedding(output_dim=EMBEDDING_DIM, input_dim=len(word2id))(encoder_inputs)
+    emb_inp = Embedding(output_dim=EMBEDDING_DIM, input_dim=VOCAB_SIZE)(encoder_inputs)
 
     # dropout_U = 0.2, dropout_W = 0.2 ,
     encoder_LSTM = LSTM(HIDDEN_UNITS, return_state=True)
@@ -188,11 +364,11 @@ def bidirectional_lstm():
     # decoder_inputs = Input(shape=(squence_length,),name="decodinput")
     decoder_inputs = Input(shape=(None,),name="decodinput")
     # input_length =squence_length,
-    emb_target = Embedding(output_dim=EMBEDDING_DIM, input_dim=len(word2id), mask_zero=True)(decoder_inputs)
+    emb_target = Embedding(output_dim=EMBEDDING_DIM, input_dim=VOCAB_SIZE, mask_zero=True)(decoder_inputs)
 
     decoder_LSTM = LSTM(HIDDEN_UNITS, return_sequences=True, return_state=True)
     decoder_outputs, _, _, = decoder_LSTM(emb_target, initial_state=encoder_states)
-    decoder_dense = Dense(units=len(word2id), activation="linear",name="output")
+    decoder_dense = Dense(units=VOCAB_SIZE, activation="linear",name="output")
     decoder_outputs = decoder_dense(decoder_outputs)
 
     # modeling
@@ -232,6 +408,55 @@ def bidirectional_lstm():
     return model
 
 
+def simpleModel():
+    HIDDEN_SIZE = 256
+
+    encoder_inputs = keras.Input(shape=(None,VOCAB_SIZE_SOURCE),name='encodinput')
+    #emb_inp = Embedding(output_dim=HIDDEN_SIZE, input_dim=EN_VOCAB_SIZE)(encoder_inputs)
+    encoder_h1, encoder_state_h1, encoder_state_c1 = keras.layers.LSTM(HIDDEN_SIZE, return_sequences=True, return_state=True)(encoder_inputs)
+    encoder_h2, encoder_state_h2, encoder_state_c2 = keras.layers.LSTM(HIDDEN_SIZE, return_state=True)(encoder_h1)
+
+    # encode_model = keras.Model(encoder_inputs, encoder_h2)
+    # encode_model.save('encode_model.h5')
+
+
+    decoder_inputs = keras.Input(shape=(None,VOCAB_SIZE_TARGET),name='decodinput')
+    #emb_target = Embedding(output_dim=HIDDEN_SIZE, input_dim=CH_VOCAB_SIZE, mask_zero=True)(decoder_inputs)
+    lstm1 = keras.layers.LSTM(HIDDEN_SIZE, return_sequences=True, return_state=True)
+    lstm2 = keras.layers.LSTM(HIDDEN_SIZE, return_sequences=True, return_state=True)
+    decoder_dense = keras.layers.Dense(VOCAB_SIZE_TARGET, activation='softmax',name="output")
+
+    decoder_h1, _, _ = lstm1(decoder_inputs, initial_state=[encoder_state_h1, encoder_state_c1])
+    decoder_h2, _, _ = lstm2(decoder_h1, initial_state=[encoder_state_h2, encoder_state_c2])
+    decoder_outputs = decoder_dense(decoder_h2)
+    #
+    # decode_model = keras.Model(decoder_inputs, decoder_outputs)
+    # decode_model.save('decode_model.h5')
+
+    model = keras.Model([encoder_inputs, decoder_inputs], decoder_outputs)
+
+
+    encoder_model = keras.Model(encoder_inputs, [encoder_state_h1, encoder_state_c1, encoder_state_h2, encoder_state_c2])
+
+    # 预测模型中的decoder的初始化状态需要传入新的状态
+    decoder_state_input_h1 = keras.Input(shape=(HIDDEN_SIZE,))
+    decoder_state_input_c1 = keras.Input(shape=(HIDDEN_SIZE,))
+    decoder_state_input_h2 = keras.Input(shape=(HIDDEN_SIZE,))
+    decoder_state_input_c2 = keras.Input(shape=(HIDDEN_SIZE,))
+
+    # 使用传入的值来初始化当前模型的输入状态
+    decoder_h1, state_h1, state_c1 = lstm1(decoder_inputs, initial_state=[decoder_state_input_h1, decoder_state_input_c1])
+    decoder_h2, state_h2, state_c2 = lstm2(decoder_h1, initial_state=[decoder_state_input_h2, decoder_state_input_c2])
+    decoder_outputs = decoder_dense(decoder_h2)
+
+    decoder_model = keras.Model([decoder_inputs, decoder_state_input_h1, decoder_state_input_c1, decoder_state_input_h2, decoder_state_input_c2],
+                          [decoder_outputs, state_h1, state_c1, state_h2, state_c2])
+
+
+
+
+    return model,encoder_model,decoder_model
+
 
 # def seq2seq_model(input_length,output_sequence_length,vocab_size):
 #     model = tf.keras.models.Sequential()
@@ -245,27 +470,53 @@ def bidirectional_lstm():
 #     #               optimizer = Adam(1e-3))
 #     # model.summary()
 #     return model
-# model = seq2seq_model(squence_length,100,len(word2id))
+# model = seq2seq_model(squence_length,100,VOCAB_SIZE)
 
 
 # model,enco_model,deco_model = bidirectional_lstm()
-model = bidirectional_lstm()
+# model = bidirectional_lstm()
+model,encoder_model,decoder_model = simpleModel()
 
 
 
-# opt = keras.optimizers.Adam(lr=lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
-rmsprop = keras.optimizers.RMSprop(lr=lr, clipnorm=1.0)
-model.compile(optimizer=rmsprop, loss='mse', metrics=['accuracy'])
+# opt = keras.optimizers.RMSprop(lr=lr, clipnorm=1.0)
+opt = keras.optimizers.Adam(lr=lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
+# model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 model.summary()
 
-# model.fit([encoder_input_data,decoder_input_data], decoder_output_data,
+
+
+##all datasets
+
+# encoder_sequences, decoder_in_sequences,decoder_out_sequences = text2seq(tokenizer_source,tokenizer_target,corpusX, corpusYin,corpusYout)
+# # encoder_input_data, decoder_output_data, decoder_input_data = padding(encoder_sequences, decoder_out_sequences,decoder_in_sequences, squence_length)
+# num_samples = len(encoder_sequences)
+# # decoder_output_data = decoder_output_creater(decoder_output_data, num_samples, squence_length, VOCAB_SIZE)
+# # encoder_input,decoder_input,decoder_output = model_data_flow_creator(encoder_input_data,decoder_input_data,decoder_output_data, num_samples, squence_length,VOCAB_SIZE_SOURCE,VOCAB_SIZE_TARGET)
+# encoder_input,decoder_input,decoder_output = model_data_flow_creator(encoder_sequences,decoder_in_sequences,decoder_out_sequences, num_samples, max_encoder_seq_length,max_decoder_seq_length,VOCAB_SIZE_SOURCE,VOCAB_SIZE_TARGET)
+# # print(encoder_input.shape)
+# # print(decoder_input.shape)
+# # print(decoder_output.shape)
+
+# model.fit([encoder_input,decoder_input], decoder_output,
 #           # batch_size=1,
+#           batch_size=BATCH_SIZE,
 #           epochs=EPOCHS,
 #           # validation_split=0.05
 #           )
-batches = (len(corpusX)+BATCH_SIZE-1)//BATCH_SIZE
+
+
+# generator
+
+# batches = (len(corpusX)+BATCH_SIZE-1)//BATCH_SIZE
+batches = (len(corpusX))//BATCH_SIZE
+print('len corpusX :{}'.format(len(corpusX)))
 print('batches:{}'.format(batches))
 model.fit_generator(datagenerator(),steps_per_epoch=batches,epochs=EPOCHS)
+
+
+
 model.save('s2s.h5')
 
 
@@ -321,3 +572,37 @@ model.save('s2s.h5')
 #     # print(en_data[k])
 #     print(enchar)
 #     print(''.join([id2ch[i] for i in outputs]))
+
+
+
+task =[
+    # '你怎么知道',
+    # '你怎么傻',
+    'i love you',
+    'i hate you',
+    'i miss you',
+    'i run ',
+    'i kill you',
+    'i see you',
+
+]
+
+
+for enchar in task:
+    test_data = doc2v(tokenizer_source,enchar,max_encoder_seq_length,VOCAB_SIZE_SOURCE)
+    print(test_data.shape)
+    h1, c1, h2, c2 = encoder_model.predict(test_data)
+    target_seq = np.zeros((1, 1, VOCAB_SIZE_TARGET))
+    target_seq[0, 0, word2id_target[stag]] = 1
+    outputs = []
+    while True:
+        output_tokens, h1, c1, h2, c2 = decoder_model.predict([target_seq, h1, c1, h2, c2])
+        sampled_token_index = np.argmax(output_tokens[0, -1, :])
+        outputs.append(sampled_token_index)
+        target_seq = np.zeros((1, 1,VOCAB_SIZE_TARGET))
+        target_seq[0, 0, sampled_token_index] = 1.
+        if sampled_token_index == word2id_target[etag] or len(outputs) > 20: break
+
+    # print(en_data[k])
+    print(enchar)
+    print(''.join([id2word_target.get(i,'None') for i in outputs]))
