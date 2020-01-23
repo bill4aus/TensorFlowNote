@@ -1,0 +1,22 @@
+数据编码 部分
+
+one-hot   还是  embedding
+word 还是 charactor 级别
+
+function:
+English_One_Character_Encoding
+Chinese_One_Character_Encoding
+English_One_Word_Encoding
+Chinese_One_Word_Encoding
+
+
+
+
+模型构建 部分
+主要考虑参数大小问题   单词级的可能需要嵌入层
+
+
+
+
+模型训练 部分
+一次性 还是  分批

@@ -6,7 +6,9 @@ import os
 import pickle
 import random
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-
+import time
+import jieba
+import jieba.posseg as pseg
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -52,13 +54,18 @@ print('\n英文字典:\n', en2id)
 print('\n中文字典共计\n:', ch2id)
 
 
+
+
 '''
+configpath = 'config'
+
+
 # loading
-with open('tokenizer_source.pickle', 'rb') as handle:
+with open(configpath+'/tokenizer_source.pickle', 'rb') as handle:
     tokenizer_source = pickle.load(handle)
-with open('tokenizer_target.pickle', 'rb') as handle:
+with open(configpath+'/tokenizer_target.pickle', 'rb') as handle:
     tokenizer_target = pickle.load(handle)
-with open("config.file", "rb") as handle:
+with open(configpath+"/config.file", "rb") as handle:
     config = pickle.load(handle)
 
 
@@ -93,10 +100,11 @@ EPOCHS = 200
 # max_encoder_seq_length = max([len(wlist) for wlist in corpusX])
 # max_decoder_seq_length = max([len(txt) for txt in corpusYin])
 
-max_encoder_seq_length= config['max_encoder_seq_length']
+max_encoder_seq_length= config['max_encoder_seq_length'] 
 max_decoder_seq_length = config['max_decoder_seq_length']
 
-
+print(max_encoder_seq_length)
+print(max_decoder_seq_length)
 
 stag = 'start'
 etag = 'end'
@@ -206,9 +214,9 @@ def build_model():
 
 
 
-def build_model_1():
+def build_model_1(pathstr):
     pass
-    model = keras.models.load_model('s2s.h5')
+    model = keras.models.load_model(pathstr+'/s2s.h5')
     print(model.summary())
 
 
@@ -245,7 +253,7 @@ def build_model_1():
 
 
 # encoder_model,decoder_model = build_model()
-encoder_model,decoder_model = build_model_1()
+encoder_model,decoder_model = build_model_1(configpath)
 ################################################### predict ############################################################
 #预测模型中的encoder和训练中的一样，都是输入序列，输出几个状态。而decoder和训练中稍有不同，因为训练过程中的decoder端的输入是可以确定的，因此状态只需要初始化一次，而预测过程中，需要多次初始化状态，因此将状态也作为模型输入。
 
@@ -283,16 +291,54 @@ random.seed(234)
 # idx = random.randint(0,len(id2en))
 # print(idx)
 task =[
-    # '夏天来临，皮肤在强烈紫外线的照射下，晒伤不可避免，因此，晒后及时修复显得尤为重要，否则可能会造成长期伤害。专家表示，选择晒后护肤品要慎重，芦荟凝胶是最安全，有效的一种选择，晒伤严重者，还请及时就医。',
-    # '中国古代玺印的出现，可以上溯至商代。印者，信也，印章的主要功能就是示信，随着佩印风气的形成，吉语印、肖形印等彰显审美功能的多种印式逐渐盛行。唐宋元时期文人用印功能扩大，渐成体系，但中国印章出现新的发展方向。明代中叶以后，石章应用渐盛，便利了文人独立完成创作，篆刻成为新的艺术样式。文人寄情金石，使篆刻逐渐脱离实用功能，重在抒情写意，向着艺术化方向发展。以文彭为代表的文人群体推动风气，一时风从者众，继而衍为流派。明代晚期的文人篆刻家大都受到文彭的影响，后人以文彭为首的吴门派、何震为首的雪渔派和苏宣为首的泗水派，尊为开风气之先的早期流派，文人篆刻进入盛期。明末汪关，清初程邃、林皋、许容等亦各创新风，形成新的流派。清中期的丁敬、邓石如奇峰突起，浙派、邓派从者如云，印风播及南北。高凤翰、高翔、巴慰祖、鞠履厚、乔林等一批区域性名家活跃于印坛，扬州、云间、齐鲁印人群体各呈风貌，派系繁多，争奇斗艳。晚清印人除传承浙、邓二派印风以外，亦受金石学振兴的影响，取资广泛。吴让之师法邓派而面目一新，赵之谦、徐三庚融邓、浙二家而自出机杼，黄士陵独立黟山派，印坛千峰竞秀。印人张扬个性的理念更为自觉，文人篆刻艺术的发展进入新的阶段，对近现代中国篆刻艺术的影响极为深刻。 文彭刻 画隐、梁袠刻 东山草堂珍玩 兩面章由上海博物馆、无锡博物院联合主办的《云心石面——上海博物馆、无锡博物院藏明清文人篆刻特展》将于10月29日在无锡博物院西区二层临展厅隆重展出。此次特展全面系统地展示了明清流派印的发展过程，更融入了无锡地域文化的特征。展出的印章作品，主要包括上海博物馆藏明清流派印和无锡博物院藏明代顾林墓出土的一组明代流派印，共计150余件。 苏宣刻 顾林之印 石章此次展出的印章实物，除上海博物馆藏明清文人篆刻作品以外，另有无锡博物院藏明代顾林墓、锡山区文管会藏明代华师伊墓出土的两组印章，均为首次面世。上海博物馆藏明清篆刻作品中，有相当一部分为无锡籍近代实业家华笃安先生和毛明芬女士捐赠。华氏为无锡望族，元代华幼武，明代华夏、华云、华叔阳，清代华翼纶，近代华绎之等，素有雅好收藏之传统。此次展出也是华笃安旧藏首次回归故里，观众在品味明清篆刻艺术魅力的同时，亦可从中感受到收藏、捐赠者的文化情怀，以及无锡华氏悠久深厚的家族文化传承。 乔林刻 何可一日无此君竹根章 展览详情 展览名称：《云心石面——上海博物馆、无锡博物院藏明清文人篆刻特展》 展览时间：2016.10.29-2017.2.19 展览地点：无锡博物院西区二层临展厅 主办单位：上海博物馆、无锡博物院 图文自：无锡博物院｜编辑：小仙(声明：本文仅代表作者观点，不代表文博圈立场)往期精选阅读（直接点击进入）博物馆该如何迎接IP运营时代？国家文物局：净收入50%奖励文创有功人员，企业享受资金税收扶持政策一个馆长的魄力：所有博物馆都必须改变看完考古学家吃饭，很多人服了怎样才能成为一个出色的讲解员？博物馆数字技术的现在和未来博物馆旅游功能日益突出，如何打造博物馆奇妙之旅？他把博物馆当做文化旅游项目来运作从一座馆，看一座城我们有多少博物馆，能让公众产生文化依赖博物馆数字化的可持续发展博物馆如何应对新科技的挑战？博物馆文物修复行业，为啥留不住人？他对文物界来了一次“拨乱反正”视频：海昏侯墓的考古故事，居然这么有趣陈列部主任每天在干什么？敦煌原创动画《降魔成道》引起一片叫好！文博圈，qq群 149299743'
-    # '你怎么知道',
-    # '很烦',
-    'i love you',
-    'i hate you',
-    'i miss you',
-    'i should go',
-    # 'i kill you',
-    # 'i see you',
+
+    '又一国军事基地被袭击了，都是替美国出头惹的祸！',
+    '关于中央八项规定 总书记是怎样带头执行的？',
+    '70后官员被双开:曾是微博大V 前任因集体嫖娼被敲诈',
+    '巴基斯坦法院撤销死刑判决 穆沙拉夫回应：真好',
+    '美取消对中国＂汇率操纵国＂认定 外交部:本来就不是',
+    '王毅谈习近平主席对缅甸进行国事访问',
+    '【中国稳健前行】加快推进社会治理共同体建设',
+    '人均1万美元 了不起 新春走基层  别样"春运"',
+    '白金汉宫宣布：哈里梅根将放弃王室头衔',
+    '伊朗称失事客机黑匣子将被送往乌克兰：伊朗无法读取内容',
+    '是否应该废除死刑?约8成日本人say no 理由是…',
+    '世界首富易主！LV总裁取代亚马逊创始人成新首富',
+    '谁来接任国民党主席？党内出现提议郭台铭参选呼声',
+    '惨烈！亚洲首富家族内斗，有钱人狠起来真可',
+    '春节前肉菜供应量增加，肉价下降2块多',
+    '检察官建议免除交易员Navinder的牢狱之灾',
+    '蛋壳公寓赴美上市，看头部企业如何突围？',
+    '央行年内“补水”已超万亿 下周LPR大概率下调',
+    '拓新型阅读空间 广东首间“粤书吧”办新春国乐沙龙',
+    '21分钟砍21+6！又一广东旧将在CBA挑大梁 配..',
+    '“儿子你擦干眼泪去相亲吧！”33岁男子凌晨收',
+    '“烂尾楼”变新居 600余户居民搬进新家过新年',
+    '凉凉，五家量子波动速读机构被查处',
+    '蔡英文还不知道，台湾已陷入四大危机',
+    '省工商联组织召开浙江省民营企业家“强信心、增动能”..',
+    '浙江卫视给高以翔赔偿金已谈妥，3月份在金宝山',
+    '赵忠祥最后一次录制节目的视频曝光：需要靠两人搀扶才..',
+    '程潇穿紫色毛绒外套现身机场 踩长靴秀纤细美腿',
+
+
+
+
+    '国外是真难呀，不论做什么都有一帮人吹毛求疵！',
+    '吓的把客机当无人机直接击落。',
+    '我特想听听专家的看法。',
+    '她们还是孩子！',
+    '如果让我碰到这些兔崽子，我保证不打死他们',
+    '你现在多大了，她多大了？',
+    '这些个坏孩子',
+    '霸凌的怎么都是女生',
+    '霸凌现象难除，是什么原因？',
+    '全部抓来剃头',
+    '社会的悲衰',
+    '心理教育 呵呵',
+    '麻痹的',
+    '你就是专家了。',
+    '用浓硫酸一个个的泼在它们脸上。',
 
 ]
 
@@ -301,7 +347,7 @@ task =[
 
 def doc2v(tokenizer_source,encoder_text,MAX_LEN,VOCAB_SIZE_SOURCE):
     encoder_sequences = tokenizer_source.texts_to_sequences([list(encoder_text)])
-    print(encoder_sequences)
+    # print(encoder_sequences)
     # encoder_input_data = pad_sequences(encoder_sequences, maxlen=MAX_LEN, dtype='int32',)# padding='post', truncating='post'
     encoder_input = np.zeros((1, MAX_LEN, VOCAB_SIZE_SOURCE), dtype="float32")
 
@@ -313,14 +359,19 @@ def doc2v(tokenizer_source,encoder_text,MAX_LEN,VOCAB_SIZE_SOURCE):
     for seqs in encoder_sequences:
         for j, seq in enumerate(seqs):
             # print(j,seq)
-            encoder_input[0][j][seq-1] = 1.
+            try:
+                encoder_input[0][j][seq-1] = 1.
+            except Exception as e:
+                # raise e
+                pass
+            
 
     return encoder_input
 
 
 for enchar in task:
     test_data = doc2v(tokenizer_source,enchar,max_encoder_seq_length,VOCAB_SIZE_SOURCE)
-    print(test_data.shape)
+    # print(test_data.shape)
     h1, c1, h2, c2 = encoder_model.predict(test_data)
     target_seq = np.zeros((1, 1, VOCAB_SIZE_TARGET))
     target_seq[0, 0, word2id_target[stag]] = 1
@@ -331,8 +382,17 @@ for enchar in task:
         outputs.append(sampled_token_index)
         target_seq = np.zeros((1, 1,VOCAB_SIZE_TARGET))
         target_seq[0, 0, sampled_token_index] = 1.
-        if sampled_token_index == word2id_target[etag] or len(outputs) > 20: break
+        if sampled_token_index == word2id_target[etag] or len(outputs) > 40: break
 
     # print(en_data[k])
-    print(enchar)
-    print(''.join([id2word_target.get(i,'None') for i in outputs]))
+    resptext = ' '.join([id2word_target.get(i,'None') for i in outputs]).replace('end','')
+    print('网友发言：{} <----> 机器回复：{}'.format(enchar,resptext))
+    # print(resptext)
+
+    # words = pseg.cut(resptext)
+    # for word, flag in words:
+    #     print('%s %s' % (word, flag))
+
+    # if enchar!=resptext:
+    #     task.append(resptext)
+    # time.sleep(1)
